@@ -58,12 +58,11 @@ func parseFile(filename string) ast.Stmt {
 }
 
 func processNode(n ast.Node) bool {
-	b, ok := n.(*ast.BlockStmt)
-	if ok {
-		filename, index, ok := findIncludeCall(b)
+	switch e := n.(type) {
+	case *ast.BlockStmt:
+		filename, index, ok := findIncludeCall(e)
 		if ok {
-			b.List[index] = parseFile(filename)
-			return false
+			e.List[index] = parseFile(filename)
 		}
 	}
 
