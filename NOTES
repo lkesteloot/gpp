@@ -1,0 +1,21 @@
+
+To do:
+
+    Escape strings.
+    Figure out syntax.
+    Must use bufio throughout.
+    Handle backticks in template.
+    Handle escaping {{ in template.
+
+Syntax:
+    Requirements:
+        Needs embedded strings (for speed).
+        Needs embedded non-string expressions (for convenience).
+        Maybe support "%d" % x syntax for non-strings. Would invoke fmt.Sprintf().
+        Could support that throughout the file.
+        Need function call for sub-templates.
+    Proposal:
+        {{ name }}         -- Expression must be a string.
+        {{ "%d" % x }}     -- Single parameter formatted to string.
+        {% func(a,b,c) %}  -- Sub-template. Just a expression statement probably.
+

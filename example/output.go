@@ -1,27 +1,39 @@
 package main
 
 import (
-	"io"
+	"bufio"
 	"os"
 )
 
+func title(f *bufio.Writer, title string) {
+	{
+		f.WriteString(`<title>`)
+		f.WriteString(title)
+		f.WriteString(`</title>
+`)
+	}
+
+}
+
 // Dumps the index page of the website.
-func index(f io.Writer) {
+func index(f *bufio.Writer) {
 	name := "Lawrence"
 	{
-		f.Write(([]byte)(`<!DOCTYPE html>
+		f.WriteString(`<!DOCTYPE html>
 <html>
     <body>
-        <p>Hello, `))
-		f.Write(([]byte)(name))
-		f.Write(([]byte)(`!</p>
+        <p>Hello, `)
+		f.WriteString(name)
+		f.WriteString(`!</p>
     </body>
 </html>
-`))
+`)
 	}
 
 }
 
 func main() {
-	index(os.Stdout)
+	f := bufio.NewWriter(os.Stdout)
+	index(f)
+	f.Flush()
 }

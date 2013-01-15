@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"io/ioutil"
 	"os"
 	"strings"
+)
+
+const (
+	dumpExpression = false
 )
 
 type template interface {
@@ -69,8 +74,13 @@ func loadTemplate(filename string) (template, error) {
 				exprText := content[:i]
 				expr, err := parser.ParseExpr(exprText)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Invalid expression \"%s\"\n", exprText)
+					fmt.Fprintf(os.Stderr, "Invalid expression: %s\n", exprText)
 					os.Exit(1)
+				}
+				if dumpExpression {
+					fset := token.NewFileSet()
+					printer.Fprint(os.Stderr, fset, expr)
+					fmt.Fprintln(os.Stderr)
 				}
 				b.list = append(b.list, &templateExpr{expr})
 				content = content[i+2:]
@@ -92,22 +102,11 @@ func makeWriteStmt(expr ast.Expr) ast.Stmt {
 					Name: "f",
 				},
 				Sel: &ast.Ident {
-					Name: "Write",
+					Name: "WriteString",
 				},
 			},
 			Args: []ast.Expr{
-				&ast.CallExpr{
-					Fun: &ast.ParenExpr{
-						X: &ast.ArrayType{
-							Elt: &ast.Ident {
-								Name: "byte",
-							},
-						},
-					},
-					Args: []ast.Expr{
-						expr,
-					},
-				},
+				expr,
 			},
 		},
 	}

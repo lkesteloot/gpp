@@ -2,17 +2,23 @@
 package main
 
 import (
-	"io"
+	"bufio"
 	"os"
 )
 
+func title(f *bufio.Writer, title string) {
+	include("example/title.html")
+}
+
 // Dumps the index page of the website.
-func index(f io.Writer) {
+func index(f *bufio.Writer) {
 	name := "Lawrence"
 
 	include("example/index.html")
 }
 
 func main() {
-	index(os.Stdout)
+	f := bufio.NewWriter(os.Stdout)
+	index(f)
+	f.Flush()
 }
