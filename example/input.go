@@ -1,4 +1,6 @@
 
+// +build foo
+
 package main
 
 import (

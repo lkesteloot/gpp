@@ -1,12 +1,19 @@
 
 To do:
 
-    Figure out syntax.
-    Must use bufio throughout.
+    Support expression statements.
+    Support if statements.
+    Support for statements.
     Handle backticks in template.
     Handle escaping {{ in template.
+        Nah, just get them to write entity for {.
+        Test this and document.
     Support raw strings ({{{?)
     Automatically add "html" and "fmt" to imports.
+    Parse comments?
+        They end up at the wrong place.
+        But might need +build comments at the top.
+        So parse them (add parser.ParseComments to ParseFile()) but strip most out.
 
 Syntax:
     Requirements:
@@ -18,5 +25,6 @@ Syntax:
     Proposal:
         {{ name }}         -- Expression must be a string.
         {{ "%d" % x }}     -- Single parameter formatted to string.
-        {% func(a,b,c) %}  -- Sub-template. Just a expression statement probably.
+        {% func(f,a,b) %}  -- Sub-template. Just a expression statement probably.
+        {# if expr #}  {# end (anything) #}
 

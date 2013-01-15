@@ -76,7 +76,7 @@ func main() {
 	fset := token.NewFileSet()
 
 	// Parse input file.
-	f, err := parser.ParseFile(fset, inputFilename, nil, parser.ParseComments)
+	f, err := parser.ParseFile(fset, inputFilename, nil, 0)
 	if err != nil {
 		fmt.Println(err)
 		return
