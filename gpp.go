@@ -47,18 +47,14 @@ func findIncludeCall(b *ast.BlockStmt) (filename string, index int, ok bool) {
 	return
 }
 
-func parseFile(filename string) *ast.BlockStmt {
+func parseFile(filename string) ast.Stmt {
 	t, err := loadTemplate(filename)
 	if err != nil {
 		fmt.Printf("Cannot read file \"%s\" (%s)\n", filename, err)
 		os.Exit(1)
 	}
 
-	b := &ast.BlockStmt{}
-
-	b.List = append(b.List, t.Generate())
-
-	return b
+	return t.Generate()
 }
 
 func processNode(n ast.Node) bool {
@@ -77,9 +73,9 @@ func processNode(n ast.Node) bool {
 func main() {
 	inputFilename := "example/input.go"
 
-	fset := token.NewFileSet() // positions are relative to fset
+	fset := token.NewFileSet()
 
-	// Parse file.
+	// Parse input file.
 	f, err := parser.ParseFile(fset, inputFilename, nil, parser.ParseComments)
 	if err != nil {
 		fmt.Println(err)
@@ -90,5 +86,6 @@ func main() {
 	ast.Inspect(f, processNode)
 	/// ast.Print(fset, f)
 
+	// Print transformed source code.
 	printer.Fprint(os.Stdout, fset, f)
 }

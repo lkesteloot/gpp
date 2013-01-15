@@ -12,14 +12,14 @@ func index(f io.Writer) {
 		f.Write(([]byte)(`<!DOCTYPE html>
 <html>
     <body>
-        <p>Hello, {{name}}!</p>
+        <p>Hello, `))
+		f.Write(([]byte)(name))
+		f.Write(([]byte)(`!</p>
     </body>
 </html>
 `))
 	}
-	{
-		f.Write(([]byte)(name))
-	}
+
 }
 
 func main() {
