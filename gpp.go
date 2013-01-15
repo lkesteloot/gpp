@@ -64,6 +64,13 @@ func processNode(n ast.Node) bool {
 		if ok {
 			e.List[index] = parseFile(filename)
 		}
+	case *ast.BinaryExpr:
+		if e.Op == token.REM {
+			b, ok := e.X.(*ast.BasicLit)
+			if ok && b.Kind == token.STRING {
+				// RHS is e.Y
+			}
+		}
 	}
 
 	return true
