@@ -26,7 +26,8 @@ type templateText struct {
 }
 
 func (t *templateText) Generate() ast.Stmt {
-	return makeWriteStmt(&ast.BasicLit{Kind: token.STRING, Value: "`" + t.text + "`"})
+	expr := &ast.BasicLit{Kind: token.STRING, Value: "`" + t.text + "`"}
+	return makeWriteStmt(expr, false)
 }
 
 type templateBlock struct {
@@ -48,7 +49,7 @@ type templateExpr struct {
 }
 
 func (t *templateExpr) Generate() ast.Stmt {
-	return makeWriteStmt(t.expr)
+	return makeWriteStmt(t.expr, true)
 }
 
 func loadTemplate(filename string) (template, error) {
@@ -94,7 +95,23 @@ func loadTemplate(filename string) (template, error) {
 	return b, nil
 }
 
-func makeWriteStmt(expr ast.Expr) ast.Stmt {
+func makeWriteStmt(expr ast.Expr, escape bool) ast.Stmt {
+	if escape {
+		expr = &ast.CallExpr{
+			Fun: &ast.SelectorExpr{
+				X: &ast.Ident{
+					Name: "html",
+				},
+				Sel: &ast.Ident {
+					Name: "EscapeString",
+				},
+			},
+			Args: []ast.Expr{
+				expr,
+			},
+		}
+	}
+
 	e := &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.SelectorExpr{

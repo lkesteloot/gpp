@@ -4,6 +4,7 @@ package main
 import (
 	"bufio"
 	"os"
+	"html"
 )
 
 func title(f *bufio.Writer, title string) {
@@ -12,7 +13,7 @@ func title(f *bufio.Writer, title string) {
 
 // Dumps the index page of the website.
 func index(f *bufio.Writer) {
-	name := "Lawrence"
+	name := "<b>Lawrence</b>"
 
 	include("example/index.html")
 }

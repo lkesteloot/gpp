@@ -1,11 +1,12 @@
 
 To do:
 
-    Escape strings.
     Figure out syntax.
     Must use bufio throughout.
     Handle backticks in template.
     Handle escaping {{ in template.
+    Support raw strings ({{{?)
+    Automatically add "html" and "fmt" to imports.
 
 Syntax:
     Requirements:
