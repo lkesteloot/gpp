@@ -10,7 +10,7 @@ import (
 func index(f io.Writer) {
 	name := "Lawrence"
 
-	include("example.html")
+	include("example/index.html")
 
 	{
 		f.Write(([]byte)(name))

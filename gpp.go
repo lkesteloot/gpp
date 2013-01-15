@@ -8,7 +8,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"io/ioutil"
 	"os"
 )
 
@@ -48,41 +47,8 @@ func findIncludeCall(b *ast.BlockStmt) (filename string, index int, ok bool) {
 	return
 }
 
-func makeWriteStmt(text []byte) ast.Stmt {
-	e := &ast.ExprStmt{
-		X: &ast.CallExpr{
-			Fun: &ast.SelectorExpr{
-				X: &ast.Ident{
-					Name: "f",
-				},
-				Sel: &ast.Ident {
-					Name: "Write",
-				},
-			},
-			Args: []ast.Expr{
-				&ast.CallExpr{
-					Fun: &ast.ParenExpr{
-						X: &ast.ArrayType{
-							Elt: &ast.Ident {
-								Name: "byte",
-							},
-						},
-					},
-					Args: []ast.Expr{
-						&ast.BasicLit{
-							Kind: token.STRING,
-							Value: "`" + string(text) + "`",
-						},
-					},
-				},
-			},
-		},
-	}
-	return e
-}
-
 func parseFile(filename string) *ast.BlockStmt {
-	template, err := ioutil.ReadFile(filename)
+	t, err := loadTemplate(filename)
 	if err != nil {
 		fmt.Printf("Cannot read file \"%s\" (%s)\n", filename, err)
 		os.Exit(1)
@@ -90,7 +56,7 @@ func parseFile(filename string) *ast.BlockStmt {
 
 	b := &ast.BlockStmt{}
 
-	b.List = append(b.List, makeWriteStmt(template))
+	b.List = append(b.List, t.Generate())
 
 	return b
 }
@@ -109,10 +75,12 @@ func processNode(n ast.Node) bool {
 }
 
 func main() {
+	inputFilename := "example/input.go"
+
 	fset := token.NewFileSet() // positions are relative to fset
 
 	// Parse file.
-	f, err := parser.ParseFile(fset, "example.gt", nil, parser.ParseComments)
+	f, err := parser.ParseFile(fset, inputFilename, nil, parser.ParseComments)
 	if err != nil {
 		fmt.Println(err)
 		return

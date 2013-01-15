@@ -1,0 +1,1 @@
+go run *.go >example/output.go && (cd example && go run output.go)
