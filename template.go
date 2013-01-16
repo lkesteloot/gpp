@@ -21,9 +21,11 @@ type parserState int
 
 const (
 	stateText parserState = iota
-	stateOneOpenBrace
+	stateTextOneOpenBrace
 	stateExpression
 	stateExpressionOneCloseBrace
+	stateStatement
+	stateStatementPercent
 )
 
 // ---------------------------------------------------------------------------
@@ -63,6 +65,14 @@ func (t *templateExpr) Generate(outputExpr ast.Expr) ast.Stmt {
 	return makeWriteStmt(outputExpr, makeEscapeExpr(t.expr))
 }
 
+type templateStmt struct {
+	stmt *ast.ExprStmt
+}
+
+func (t *templateStmt) Generate(outputExpr ast.Expr) ast.Stmt {
+	return t.stmt
+}
+
 // ---------------------------------------------------------------------------
 
 func parseTemplate(contentString string) (templateNode, error) {
@@ -74,21 +84,28 @@ func parseTemplate(contentString string) (templateNode, error) {
 	// Accumulated text so far in this state.
 	segment := []rune{}
 
+	flushText := func() {
+		if len(segment) > 0 {
+			b.list = append(b.list, &templateText{string(segment)})
+			segment = []rune{}
+		}
+	}
+
 	for _, ch := range content {
 		switch state {
 		case stateText:
 			if ch == '{' {
-				state = stateOneOpenBrace
+				state = stateTextOneOpenBrace
 			} else {
 				segment = append(segment, ch)
 			}
-		case stateOneOpenBrace:
+		case stateTextOneOpenBrace:
 			if ch == '{' {
-				if len(segment) > 0 {
-					b.list = append(b.list, &templateText{string(segment)})
-					segment = []rune{}
-				}
+				flushText()
 				state = stateExpression
+			} else if ch == '%' {
+				flushText()
+				state = stateStatement
 			} else {
 				segment = append(segment, '{')
 				segment = append(segment, ch)
@@ -121,15 +138,44 @@ func parseTemplate(contentString string) (templateNode, error) {
 				segment = append(segment, ch)
 				state = stateExpression
 			}
+		case stateStatement:
+			if ch == '%' {
+				state = stateStatementPercent
+			} else {
+				segment = append(segment, ch)
+			}
+		case stateStatementPercent:
+			if ch == '}' {
+				stmtText := string(segment)
+				segment = []rune{}
+				stmt, err := parser.ParseExpr(stmtText)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Invalid statement: %s\n", stmtText)
+					os.Exit(1)
+				}
+				if dumpExpression {
+					fset := token.NewFileSet()
+					printer.Fprint(os.Stderr, fset, stmt)
+					fmt.Fprintln(os.Stderr)
+				}
+				b.list = append(b.list, &templateStmt{&ast.ExprStmt{X:stmt}})
+				state = stateText
+			} else {
+				segment = append(segment, '%')
+				segment = append(segment, ch)
+				state = stateStatement
+			}
 		}
 	}
 
-	if state == stateText {
-		if len(segment) > 0 {
-			b.list = append(b.list, &templateText{string(segment)})
-		}
-	} else {
-		fmt.Fprintln(os.Stderr, "Unmatched {{")
+	switch state {
+	case stateText:
+		flushText()
+	case stateTextOneOpenBrace:
+		segment = append(segment, '{')
+		flushText()
+	default:
+		fmt.Fprintln(os.Stderr, "Unmatched brace")
 		os.Exit(1)
 	}
 

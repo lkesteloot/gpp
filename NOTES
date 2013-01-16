@@ -2,11 +2,8 @@
 To do:
 
     Support if statements.
-        Requires proper parser.
-        Maybe cast strings to runes?
     When adding import make sure it's not already imported.
     Come up with better error-reporting system.
-    Support for statements.
     Handle backticks in template.
         Maybe just use "" quotes and escape everything else.
     Handle escaping {{ in template.
