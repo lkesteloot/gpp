@@ -75,14 +75,14 @@ func TestFormatOperator(t *testing.T) {
 	input := `
 		package foo
 		func main() {
-			x := "%d" % 5
+			x := "%3d: %02X"(5, 6)
 		}
 		`
 	output := `
 		package foo
 		import "fmt"
 		func main() {
-			x := fmt.Sprintf("%d", 5)
+			x := fmt.Sprintf("%3d: %02X", 5, 6)
 		}
 		`
 	compare(t, input, output)

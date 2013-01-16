@@ -75,24 +75,19 @@ func (p *preprocessor) processIdent(ident **ast.Ident) {
 
 func (p *preprocessor) processExpr(expr *ast.Expr) {
 	switch e := (*expr).(type) {
-	case *ast.BinaryExpr:
-		if e.Op == token.REM {
-			b, ok := e.X.(*ast.BasicLit)
-			if ok && b.Kind == token.STRING {
-				*expr = &ast.CallExpr{
-					Fun: &ast.SelectorExpr{
-						X: &ast.Ident{
-							Name: "fmt",
-						},
-						Sel: &ast.Ident {
-							Name: "Sprintf",
-						},
+	case *ast.CallExpr:
+		b, ok := e.Fun.(*ast.BasicLit)
+		if ok && b.Kind == token.STRING {
+			*expr = &ast.CallExpr{
+				Fun: &ast.SelectorExpr{
+					X: &ast.Ident{
+						Name: "fmt",
 					},
-					Args: []ast.Expr{
-						e.X,
-						e.Y,
+					Sel: &ast.Ident {
+						Name: "Sprintf",
 					},
-				}
+				},
+				Args: append([]ast.Expr{e.Fun}, e.Args...),
 			}
 		}
 	}
