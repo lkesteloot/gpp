@@ -1,9 +1,13 @@
 
 To do:
 
+    Strip all comments and newlines from file.
+    Come up with better error-reporting system.
     Force input files to be non-.go.
         Generate .go files automatically?
-    Pass in expression for output bufio.Writer.
+        How to avoid overwriting good go files?
+            Special header? We can insert this manually as a comment.
+        Maybe don't write .go files if they haven't changed.
     Support if statements.
     Support for statements.
     Handle backticks in template.
@@ -12,10 +16,6 @@ To do:
         Test this and document.
         Won't work for non-HTML, like maybe JavaScript.
     Support raw strings ({{{?)
-    Parse comments?
-        They end up at the wrong place.
-        But might need +build comments at the top.
-        So parse them (add parser.ParseComments to ParseFile()) but strip most out.
 
 Syntax:
 

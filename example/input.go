@@ -9,14 +9,14 @@ import (
 )
 
 func title(f *bufio.Writer, title string) {
-	include("example/title.html")
+	include(f, "example/title.html")
 }
 
 // Dumps the index page of the website.
 func index(f *bufio.Writer) {
 	name := "<b>Lawrence</b>"
 
-	include("example/index.html")
+	include(f, "example/index.html")
 }
 
 func main() {

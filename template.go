@@ -17,27 +17,27 @@ const (
 )
 
 type template interface {
-	Generate() ast.Stmt
+	Generate(outputExpr ast.Expr) ast.Stmt
 }
 
 type templateText struct {
 	text string
 }
 
-func (t *templateText) Generate() ast.Stmt {
+func (t *templateText) Generate(outputExpr ast.Expr) ast.Stmt {
 	expr := &ast.BasicLit{Kind: token.STRING, Value: "`" + t.text + "`"}
-	return makeWriteStmt(expr)
+	return makeWriteStmt(outputExpr, expr)
 }
 
 type templateBlock struct {
 	list []template
 }
 
-func (t *templateBlock) Generate() ast.Stmt {
+func (t *templateBlock) Generate(outputExpr ast.Expr) ast.Stmt {
 	b := &ast.BlockStmt{}
 
 	for _, e := range t.list {
-		b.List = append(b.List, e.Generate())
+		b.List = append(b.List, e.Generate(outputExpr))
 	}
 
 	return b
@@ -47,8 +47,8 @@ type templateExpr struct {
 	expr ast.Expr
 }
 
-func (t *templateExpr) Generate() ast.Stmt {
-	return makeWriteStmt(makeEscapeExpr(t.expr))
+func (t *templateExpr) Generate(outputExpr ast.Expr) ast.Stmt {
+	return makeWriteStmt(outputExpr, makeEscapeExpr(t.expr))
 }
 
 func parseTemplate(content string) (template, error) {
@@ -104,13 +104,11 @@ func makeEscapeExpr(expr ast.Expr) ast.Expr {
 	}
 }
 
-func makeWriteStmt(expr ast.Expr) ast.Stmt {
+func makeWriteStmt(outputExpr ast.Expr, expr ast.Expr) ast.Stmt {
 	return &ast.ExprStmt{
 		X: &ast.CallExpr{
 			Fun: &ast.SelectorExpr{
-				X: &ast.Ident{
-					Name: "f",
-				},
+				X: outputExpr,
 				Sel: &ast.Ident {
 					Name: "WriteString",
 				},

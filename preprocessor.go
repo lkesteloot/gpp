@@ -29,18 +29,28 @@ func NewPreprocessor() *preprocessor {
 	return p
 }
 
-func (p *preprocessor) parseIncludeCall(e *ast.ExprStmt) (filename string, ok bool) {
+func (p *preprocessor) parseIncludeCall(e *ast.ExprStmt) (outputExpr ast.Expr, filename string, ok bool) {
 	c, ok := e.X.(*ast.CallExpr)
 	if ok {
 		i, ok := c.Fun.(*ast.Ident)
 		if ok {
 			if i.Name == "include" {
-				arg0, ok := c.Args[0].(*ast.BasicLit)
-				if ok && arg0.Kind == token.STRING {
-					filename := arg0.Value
+				if len(c.Args) != 2 {
+					fmt.Fprintf(os.Stderr, "the include() function takes two arguments")
+					os.Exit(1)
+				}
+
+				outputExpr = c.Args[0]
+
+				filenameArg, ok := c.Args[1].(*ast.BasicLit)
+				if ok && filenameArg.Kind == token.STRING {
+					filename = filenameArg.Value
 					// Strip out quotes.
 					filename = filename[1:len(filename) - 1]
-					return filename, true
+					return outputExpr, filename, true
+				} else {
+					fmt.Fprintf(os.Stderr, "the second parameter of include() must be a filename")
+					os.Exit(1)
 				}
 			}
 		}
@@ -49,20 +59,20 @@ func (p *preprocessor) parseIncludeCall(e *ast.ExprStmt) (filename string, ok bo
 	return
 }
 
-func (p *preprocessor) parseFile(filename string) ast.Stmt {
+func (p *preprocessor) parseFile(outputExpr ast.Expr, filename string) ast.Stmt {
 	content, err := p.readFile(filename)
 	if err != nil {
-		fmt.Printf("Cannot read file \"%s\" (%s)\n", filename, err)
+		fmt.Fprintf(os.Stderr, "Cannot read file \"%s\" (%s)\n", filename, err)
 		os.Exit(1)
 	}
 
 	t, err := parseTemplate(content)
 	if err != nil {
-		fmt.Printf("Cannot parse file \"%s\" (%s)\n", filename, err)
+		fmt.Fprintf(os.Stderr, "Cannot parse file \"%s\" (%s)\n", filename, err)
 		os.Exit(1)
 	}
 
-	return t.Generate()
+	return t.Generate(outputExpr)
 }
 
 func (p *preprocessor) processNode(node ast.Node) {
@@ -96,9 +106,9 @@ func (p *preprocessor) processExpr(expr *ast.Expr) {
 func (p *preprocessor) processStmt(stmt *ast.Stmt) {
 	switch e := (*stmt).(type) {
 	case *ast.ExprStmt:
-		filename, ok := p.parseIncludeCall(e)
+		outputExpr, filename, ok := p.parseIncludeCall(e)
 		if ok {
-			*stmt = p.parseFile(filename)
+			*stmt = p.parseFile(outputExpr, filename)
 		}
 	}
 }
