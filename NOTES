@@ -1,9 +1,6 @@
 
 To do:
 
-    How to avoid overwriting good go files?
-        Special header? We can insert this manually as a comment.
-    Maybe don't write .go files if they haven't changed.
     Support if statements.
         Requires proper parser.
         Maybe cast strings to runes?
@@ -19,6 +16,9 @@ To do:
     Support raw strings ({{{?)
     Strip all comments and newlines from file.
         I think we'd have to blank out all Pos to 0 throughout the tree.
+    How to avoid overwriting good go files?
+        Special header? We can insert this manually as a comment.
+    Maybe don't write .go files if they haven't changed.
 
 Syntax:
 

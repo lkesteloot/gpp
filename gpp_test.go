@@ -37,7 +37,7 @@ func cleanUp(input string) string {
 
 func compare(t *testing.T, input, expectedOutput string) {
 	fakeFiles := map[string]string{
-		"simple": "content",
+		"simple": "con{tent",
 		"hello": "Hello {{ name }}!",
 	}
 
@@ -92,14 +92,14 @@ func TestSimpleInclude(t *testing.T) {
 	input := `
 		package foo
 		func main() {
-			include("simple")
+			include(f, "simple")
 		}
 		`
 	output := `
 		package foo
 		func main() {
 			{
-				f.WriteString(` + "`content`" + `)
+				f.WriteString(` + "`con{tent`" + `)
 			}
 		}
 		`
@@ -111,7 +111,7 @@ func TestExpressionInclude(t *testing.T) {
 		package foo
 		func main() {
 			name := "Fred"
-			include("hello")
+			include(f, "hello")
 		}
 		`
 	output := `

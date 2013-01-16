@@ -9,14 +9,26 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
-	"strings"
 )
 
 const (
 	dumpExpression = false
 )
 
-type template interface {
+// ---------------------------------------------------------------------------
+
+type parserState int
+
+const (
+	stateText parserState = iota
+	stateOneOpenBrace
+	stateExpression
+	stateExpressionOneCloseBrace
+)
+
+// ---------------------------------------------------------------------------
+
+type templateNode interface {
 	Generate(outputExpr ast.Expr) ast.Stmt
 }
 
@@ -30,7 +42,7 @@ func (t *templateText) Generate(outputExpr ast.Expr) ast.Stmt {
 }
 
 type templateBlock struct {
-	list []template
+	list []templateNode
 }
 
 func (t *templateBlock) Generate(outputExpr ast.Expr) ast.Stmt {
@@ -51,21 +63,47 @@ func (t *templateExpr) Generate(outputExpr ast.Expr) ast.Stmt {
 	return makeWriteStmt(outputExpr, makeEscapeExpr(t.expr))
 }
 
-func parseTemplate(content string) (template, error) {
+// ---------------------------------------------------------------------------
+
+func parseTemplate(contentString string) (templateNode, error) {
 	b := &templateBlock{}
 
-	for {
-		i := strings.Index(content, "{{")
-		if i >= 0 {
-			b.list = append(b.list, &templateText{content[:i]})
+	content := ([]rune)(contentString)
+	state := stateText
 
-			content = content[i+2:]
-			i = strings.Index(content, "}}")
-			if i == -1 {
-				fmt.Fprintln(os.Stderr, "Unmatched {{")
-				os.Exit(1)
+	// Accumulated text so far in this state.
+	segment := []rune{}
+
+	for _, ch := range content {
+		switch state {
+		case stateText:
+			if ch == '{' {
+				state = stateOneOpenBrace
 			} else {
-				exprText := content[:i]
+				segment = append(segment, ch)
+			}
+		case stateOneOpenBrace:
+			if ch == '{' {
+				if len(segment) > 0 {
+					b.list = append(b.list, &templateText{string(segment)})
+					segment = []rune{}
+				}
+				state = stateExpression
+			} else {
+				segment = append(segment, '{')
+				segment = append(segment, ch)
+				state = stateText
+			}
+		case stateExpression:
+			if ch == '}' {
+				state = stateExpressionOneCloseBrace
+			} else {
+				segment = append(segment, ch)
+			}
+		case stateExpressionOneCloseBrace:
+			if ch == '}' {
+				exprText := string(segment)
+				segment = []rune{}
 				expr, err := parser.ParseExpr(exprText)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Invalid expression: %s\n", exprText)
@@ -77,12 +115,22 @@ func parseTemplate(content string) (template, error) {
 					fmt.Fprintln(os.Stderr)
 				}
 				b.list = append(b.list, &templateExpr{expr})
-				content = content[i+2:]
+				state = stateText
+			} else {
+				segment = append(segment, '}')
+				segment = append(segment, ch)
+				state = stateExpression
 			}
-		} else {
-			b.list = append(b.list, &templateText{content})
-			break
 		}
+	}
+
+	if state == stateText {
+		if len(segment) > 0 {
+			b.list = append(b.list, &templateText{string(segment)})
+		}
+	} else {
+		fmt.Fprintln(os.Stderr, "Unmatched {{")
+		os.Exit(1)
 	}
 
 	return b, nil
