@@ -123,6 +123,7 @@ func (p *preprocessor) preprocess(f *ast.File) {
 	if p.printTree {
 		ast.Print(fset, f)
 	}
+
 	visitNode(p, f)
 	if p.printTree {
 		ast.Print(fset, f)
