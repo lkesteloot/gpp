@@ -1,6 +1,9 @@
 
 To do:
 
+    Force input files to be non-.go.
+        Generate .go files automatically?
+    Pass in expression for output bufio.Writer.
     Support if statements.
     Support for statements.
     Handle backticks in template.
