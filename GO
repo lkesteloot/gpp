@@ -1,1 +1,1 @@
-go run *.go >example/output.go && (cd example && go run output.go)
+go install && ../../../../bin/gpp example/input.go >example/output.go && (cd example && go run output.go)

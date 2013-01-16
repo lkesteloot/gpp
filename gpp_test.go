@@ -64,67 +64,67 @@ func compare(t *testing.T, input, expectedOutput string) {
 
 func TestNoOp(t *testing.T) {
 	input := `
-package foo
-func main() {
-}
-`
+		package foo
+		func main() {
+		}
+		`
 	compare(t, input, input)
 }
 
 func TestFormatOperator(t *testing.T) {
 	input := `
-package foo
-func main() {
-	x := "%d" % 5
-}
-`
+		package foo
+		func main() {
+			x := "%d" % 5
+		}
+		`
 	output := `
-package foo
-import "fmt"
-func main() {
-	x := fmt.Sprintf("%d", 5)
-}
-`
+		package foo
+		import "fmt"
+		func main() {
+			x := fmt.Sprintf("%d", 5)
+		}
+		`
 	compare(t, input, output)
 }
 
 func TestSimpleInclude(t *testing.T) {
 	input := `
-package foo
-func main() {
-	include("simple")
-}
-`
+		package foo
+		func main() {
+			include("simple")
+		}
+		`
 	output := `
-package foo
-func main() {
-	{
-		f.WriteString(` + "`content`" + `)
-	}
-}
-`
+		package foo
+		func main() {
+			{
+				f.WriteString(` + "`content`" + `)
+			}
+		}
+		`
 	compare(t, input, output)
 }
 
 func TestExpressionInclude(t *testing.T) {
 	input := `
-package foo
-func main() {
-	name := "Fred"
-	include("hello")
-}
-`
+		package foo
+		func main() {
+			name := "Fred"
+			include("hello")
+		}
+		`
 	output := `
-package foo
-import "html"
-func main() {
-	name := "Fred"
-	{
-		f.WriteString(` + "`Hello `" + `)
-		f.WriteString(html.EscapeString(name))
-		f.WriteString(` + "`!`" + `)
-	}
-}
-`
+		package foo
+		import "html"
+		func main() {
+			name := "Fred"
+			{
+				f.WriteString(` + "`Hello `" + `)
+				f.WriteString(html.EscapeString(name))
+				f.WriteString(` + "`!`" + `)
+			}
+		}
+		`
 	compare(t, input, output)
 }

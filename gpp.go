@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go/parser"
 	"go/printer"
@@ -11,8 +12,15 @@ import (
 )
 
 func main() {
-	inputFilename := "example/input.go"
+	// Get input file.
+	flag.Parse()
+	if flag.NArg() != 1 {
+		fmt.Println("Must supply one input filename.")
+		os.Exit(1)
+	}
+	inputFilename := flag.Arg(0)
 
+	// We don't really need this.
 	fset := token.NewFileSet()
 
 	// Parse input file.
@@ -22,6 +30,7 @@ func main() {
 		return
 	}
 
+	// Process the source file.
 	p := NewPreprocessor()
 	p.preprocess(f)
 

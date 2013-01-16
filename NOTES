@@ -1,7 +1,6 @@
 
 To do:
 
-    Support expression statements.
     Support if statements.
     Support for statements.
     Handle backticks in template.
@@ -9,11 +8,14 @@ To do:
         Nah, just get them to write entity for {.
         Test this and document.
     Support raw strings ({{{?)
-    Automatically add "html" and "fmt" to imports.
     Parse comments?
         They end up at the wrong place.
         But might need +build comments at the top.
         So parse them (add parser.ParseComments to ParseFile()) but strip most out.
+    Maybe change "%d" % 5 format to "%d"(5)
+        Conceptually, we're "stringing" the arguments.
+        Would support multiple parameters:
+            "%3d: %02X"(5, 6)
 
 Syntax:
     Requirements:
