@@ -3,5 +3,7 @@
     <body>
         <p>Hello, {{ name }}!</p>
         <p>Your age is {{ "%d"(2013 - 1971) }}!</p>
+        <p>Various { and } characters to throw off the parser.</p>
+        <p>And a {{ []string{"close brace"}[0] }} inside the expression.</p>
     </body>
 </html>

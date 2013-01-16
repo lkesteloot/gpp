@@ -46,6 +46,15 @@ func visitBlockStmt(v visitor, stmt *ast.BlockStmt) {
 	walkStmtList(v, stmt.List)
 }
 
+func visitArrayType(v visitor, a *ast.ArrayType) {
+	v.processNode(a)
+
+	if a.Len != nil {
+		visitExpr(v, &a.Len)
+	}
+	visitExpr(v, &a.Elt)
+}
+
 func visitIdent(v visitor, ident **ast.Ident) {
 	v.processIdent(ident)
 }
@@ -115,6 +124,10 @@ func visitExpr(v visitor, expr *ast.Expr) {
 	case *ast.KeyValueExpr:
 		visitExpr(v, &n.Key)
 		visitExpr(v, &n.Value)
+
+	// Types
+	case *ast.ArrayType:
+		visitArrayType(v, n)
 
 	default:
 		fmt.Printf("ast.visitExpr: unexpected node type %T", n)
@@ -305,10 +318,7 @@ func visitNode(v visitor, node ast.Node) {
 
 	// Types
 	case *ast.ArrayType:
-		if n.Len != nil {
-			visitExpr(v, &n.Len)
-		}
-		visitExpr(v, &n.Elt)
+		visitArrayType(v, n)
 
 	case *ast.StructType:
 		visitNode(v, n.Fields)
