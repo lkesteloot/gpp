@@ -6,7 +6,6 @@ package main
 import (
 	"bufio"
 	"os"
-	"html"
 )
 
 func title(f *bufio.Writer, title string) {

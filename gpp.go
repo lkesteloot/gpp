@@ -11,6 +11,10 @@ import (
 	"os"
 )
 
+const (
+	printTree = false
+)
+
 func parseIncludeCall(s ast.Stmt) (filename string, ok bool) {
 	e, ok := s.(*ast.ExprStmt)
 	if ok {
@@ -34,19 +38,6 @@ func parseIncludeCall(s ast.Stmt) (filename string, ok bool) {
 	return
 }
 
-func findIncludeCall(b *ast.BlockStmt) (filename string, index int, ok bool) {
-	var s ast.Stmt
-
-	for index, s = range b.List {
-		filename, ok = parseIncludeCall(s)
-		if ok {
-			return
-		}
-	}
-	ok = false
-	return
-}
-
 func parseFile(filename string) ast.Stmt {
 	t, err := loadTemplate(filename)
 	if err != nil {
@@ -57,23 +48,69 @@ func parseFile(filename string) ast.Stmt {
 	return t.Generate()
 }
 
-func processNode(n ast.Node) bool {
-	switch e := n.(type) {
-	case *ast.BlockStmt:
-		filename, index, ok := findIncludeCall(e)
-		if ok {
-			e.List[index] = parseFile(filename)
-		}
+type gppInspector bool
+
+func (g gppInspector) processNode(node ast.Node) {
+	// Nothing.
+}
+
+func (g gppInspector) processIdent(ident **ast.Ident) {
+	// Nothing.
+}
+
+func (g gppInspector) processExpr(expr *ast.Expr) {
+	switch e := (*expr).(type) {
 	case *ast.BinaryExpr:
 		if e.Op == token.REM {
 			b, ok := e.X.(*ast.BasicLit)
 			if ok && b.Kind == token.STRING {
-				// RHS is e.Y
+				*expr = &ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X: &ast.Ident{
+							Name: "fmt",
+						},
+						Sel: &ast.Ident {
+							Name: "Sprintf",
+						},
+					},
+					Args: []ast.Expr{
+						e.X,
+						e.Y,
+					},
+				}
 			}
 		}
 	}
+}
 
-	return true
+func (g gppInspector) processStmt(stmt *ast.Stmt) {
+	switch e := (*stmt).(type) {
+	case *ast.ExprStmt:
+		filename, ok := parseIncludeCall(e)
+		if ok {
+			*stmt = parseFile(filename)
+		}
+	}
+}
+
+func (g gppInspector) processDecl(decl *ast.Decl) {
+	// Nothing.
+}
+
+func proprocess(f *ast.File) {
+	fset := token.NewFileSet()
+
+	if printTree {
+		ast.Print(fset, f)
+	}
+	var g gppInspector
+	visitNode(g, f)
+	if printTree {
+		ast.Print(fset, f)
+	}
+
+	addImport(f, "fmt")
+	addImport(f, "html")
 }
 
 func main() {
@@ -88,9 +125,7 @@ func main() {
 		return
 	}
 
-	/// ast.Print(fset, f)
-	ast.Inspect(f, processNode)
-	/// ast.Print(fset, f)
+	proprocess(f)
 
 	// Print transformed source code.
 	printer.Fprint(os.Stdout, fset, f)

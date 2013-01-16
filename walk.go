@@ -40,6 +40,12 @@ func walkDeclList(v visitor, list []ast.Decl) {
 	}
 }
 
+func visitBlockStmt(v visitor, stmt *ast.BlockStmt) {
+	v.processNode(stmt)
+
+	walkStmtList(v, stmt.List)
+}
+
 func visitIdent(v visitor, ident **ast.Ident) {
 	v.processIdent(ident)
 }
@@ -58,42 +64,42 @@ func visitExpr(v visitor, expr *ast.Expr) {
 
 	case *ast.FuncLit:
 		visitNode(v, n.Type)
-		visitNode(v, n.Body)
+		visitBlockStmt(v, n.Body)
 
 	case *ast.CompositeLit:
 		if n.Type != nil {
-			visitNode(v, n.Type)
+			visitExpr(v, &n.Type)
 		}
 		walkExprList(v, n.Elts)
 
 	case *ast.ParenExpr:
-		visitNode(v, n.X)
+		visitExpr(v, &n.X)
 
 	case *ast.SelectorExpr:
-		visitNode(v, n.X)
-		visitNode(v, n.Sel)
+		visitExpr(v, &n.X)
+		visitIdent(v, &n.Sel)
 
 	case *ast.IndexExpr:
-		visitNode(v, n.X)
-		visitNode(v, n.Index)
+		visitExpr(v, &n.X)
+		visitExpr(v, &n.Index)
 
 	case *ast.SliceExpr:
-		visitNode(v, n.X)
+		visitExpr(v, &n.X)
 		if n.Low != nil {
-			visitNode(v, n.Low)
+			visitExpr(v, &n.Low)
 		}
 		if n.High != nil {
-			visitNode(v, n.High)
+			visitExpr(v, &n.High)
 		}
 
 	case *ast.TypeAssertExpr:
-		visitNode(v, n.X)
+		visitExpr(v, &n.X)
 		if n.Type != nil {
-			visitNode(v, n.Type)
+			visitExpr(v, &n.Type)
 		}
 
 	case *ast.CallExpr:
-		visitNode(v, n.Fun)
+		visitExpr(v, &n.Fun)
 		walkExprList(v, n.Args)
 
 	case *ast.StarExpr:
@@ -109,6 +115,10 @@ func visitExpr(v visitor, expr *ast.Expr) {
 	case *ast.KeyValueExpr:
 		visitExpr(v, &n.Key)
 		visitExpr(v, &n.Value)
+
+	default:
+		fmt.Printf("ast.visitExpr: unexpected node type %T", n)
+		panic("ast.visitExpr")
 	}
 }
 
@@ -126,7 +136,7 @@ func visitStmt(v visitor, stmt *ast.Stmt) {
 		// nothing to do
 
 	case *ast.LabeledStmt:
-		visitNode(v, n.Label)
+		visitIdent(v, &n.Label)
 		visitStmt(v, &n.Stmt)
 
 	case *ast.ExprStmt:
@@ -158,16 +168,16 @@ func visitStmt(v visitor, stmt *ast.Stmt) {
 		}
 
 	case *ast.BlockStmt:
-		walkStmtList(v, n.List)
+		visitBlockStmt(v, n)
 
 	case *ast.IfStmt:
 		if n.Init != nil {
-			visitNode(v, n.Init)
+			visitStmt(v, &n.Init)
 		}
-		visitNode(v, n.Cond)
-		visitNode(v, n.Body)
+		visitExpr(v, &n.Cond)
+		visitBlockStmt(v, n.Body)
 		if n.Else != nil {
-			visitNode(v, n.Else)
+			visitStmt(v, &n.Else)
 		}
 
 	case *ast.CaseClause:
@@ -176,48 +186,52 @@ func visitStmt(v visitor, stmt *ast.Stmt) {
 
 	case *ast.SwitchStmt:
 		if n.Init != nil {
-			visitNode(v, n.Init)
+			visitStmt(v, &n.Init)
 		}
 		if n.Tag != nil {
-			visitNode(v, n.Tag)
+			visitExpr(v, &n.Tag)
 		}
-		visitNode(v, n.Body)
+		visitBlockStmt(v, n.Body)
 
 	case *ast.TypeSwitchStmt:
 		if n.Init != nil {
-			visitNode(v, n.Init)
+			visitStmt(v, &n.Init)
 		}
-		visitNode(v, n.Assign)
-		visitNode(v, n.Body)
+		visitStmt(v, &n.Assign)
+		visitBlockStmt(v, n.Body)
 
 	case *ast.CommClause:
 		if n.Comm != nil {
-			visitNode(v, n.Comm)
+			visitStmt(v, &n.Comm)
 		}
 		walkStmtList(v, n.Body)
 
 	case *ast.SelectStmt:
-		visitNode(v, n.Body)
+		visitBlockStmt(v, n.Body)
 
 	case *ast.ForStmt:
 		if n.Init != nil {
-			visitNode(v, n.Init)
+			visitStmt(v, &n.Init)
 		}
 		if n.Cond != nil {
-			visitNode(v, n.Cond)
+			visitExpr(v, &n.Cond)
 		}
 		if n.Post != nil {
-			visitNode(v, n.Post)
+			visitStmt(v, &n.Post)
 		}
-		visitNode(v, n.Body)
+		visitBlockStmt(v, n.Body)
 
 	case *ast.RangeStmt:
-		visitNode(v, n.Key)
+		visitExpr(v, &n.Key)
 		if n.Value != nil {
-			visitNode(v, n.Value)
+			visitExpr(v, &n.Value)
 		}
-		visitNode(v, n.X)
-		visitNode(v, n.Body)
+		visitExpr(v, &n.X)
+		visitBlockStmt(v, n.Body)
+
+	default:
+		fmt.Printf("ast.visitStmt: unexpected node type %T", n)
+		panic("ast.visitStmt")
 	}
 }
 
@@ -243,11 +257,15 @@ func visitDecl(v visitor, decl *ast.Decl) {
 		if n.Recv != nil {
 			visitNode(v, n.Recv)
 		}
-		visitNode(v, n.Name)
+		visitIdent(v, &n.Name)
 		visitNode(v, n.Type)
 		if n.Body != nil {
-			visitNode(v, n.Body)
+			visitBlockStmt(v, n.Body)
 		}
+
+	default:
+		fmt.Printf("ast.visitDecl: unexpected node type %T", n)
+		panic("ast.visitDecl")
 	}
 }
 
@@ -255,6 +273,9 @@ func visitNode(v visitor, node ast.Node) {
 	v.processNode(node)
 
 	switch n := node.(type) {
+	case *ast.BadExpr, *ast.Ident, *ast.BasicLit:
+		// nothing to do
+
 	// Comments and fields
 	case *ast.Comment:
 		// nothing to do
@@ -269,7 +290,7 @@ func visitNode(v visitor, node ast.Node) {
 			visitNode(v, n.Doc)
 		}
 		walkIdentList(v, n.Names)
-		visitNode(v, n.Type)
+		visitExpr(v, &n.Type)
 		if n.Tag != nil {
 			visitNode(v, n.Tag)
 		}
@@ -285,9 +306,9 @@ func visitNode(v visitor, node ast.Node) {
 	// Types
 	case *ast.ArrayType:
 		if n.Len != nil {
-			visitNode(v, n.Len)
+			visitExpr(v, &n.Len)
 		}
-		visitNode(v, n.Elt)
+		visitExpr(v, &n.Elt)
 
 	case *ast.StructType:
 		visitNode(v, n.Fields)
@@ -306,14 +327,14 @@ func visitNode(v visitor, node ast.Node) {
 		visitNode(v, n.Value)
 
 	case *ast.ChanType:
-		visitNode(v, n.Value)
+		visitExpr(v, &n.Value)
 
 	case *ast.ImportSpec:
 		if n.Doc != nil {
 			visitNode(v, n.Doc)
 		}
 		if n.Name != nil {
-			visitNode(v, n.Name)
+			visitIdent(v, &n.Name)
 		}
 		visitNode(v, n.Path)
 		if n.Comment != nil {
@@ -326,7 +347,7 @@ func visitNode(v visitor, node ast.Node) {
 		}
 		walkIdentList(v, n.Names)
 		if n.Type != nil {
-			visitNode(v, n.Type)
+			visitExpr(v, &n.Type)
 		}
 		walkExprList(v, n.Values)
 		if n.Comment != nil {
@@ -337,8 +358,8 @@ func visitNode(v visitor, node ast.Node) {
 		if n.Doc != nil {
 			visitNode(v, n.Doc)
 		}
-		visitNode(v, n.Name)
-		visitNode(v, n.Type)
+		visitIdent(v, &n.Name)
+		visitExpr(v, &n.Type)
 		if n.Comment != nil {
 			visitNode(v, n.Comment)
 		}
@@ -349,7 +370,7 @@ func visitNode(v visitor, node ast.Node) {
 		if n.Doc != nil {
 			visitNode(v, n.Doc)
 		}
-		visitNode(v, n.Name)
+		visitIdent(v, &n.Name)
 		walkDeclList(v, n.Decls)
 		for _, g := range n.Comments {
 			visitNode(v, g)

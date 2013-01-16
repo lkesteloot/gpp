@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func stringToAst(input string) ast.Node {
+func stringToAst(input string) *ast.File {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "test.go", input, 0)
 	if err != nil {
@@ -38,9 +38,7 @@ func compare(t *testing.T, input, expectedOutput string) {
 	expectedOutput = cleanUp(expectedOutput)
 
 	f := stringToAst(input)
-	fset := token.NewFileSet()
-	ast.Print(fset, f)
-	ast.Inspect(f, processNode)
+	proprocess(f)
 	actualOutput := astToString(f)
 	if actualOutput != expectedOutput {
 		t.Errorf("Different outputs (%s instead of expected %s)", actualOutput, expectedOutput)
