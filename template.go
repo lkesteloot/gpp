@@ -8,7 +8,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -52,13 +51,7 @@ func (t *templateExpr) Generate() ast.Stmt {
 	return makeWriteStmt(makeEscapeExpr(t.expr))
 }
 
-func loadTemplate(filename string) (template, error) {
-	contentBytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	content := string(contentBytes)
+func parseTemplate(content string) (template, error) {
 	b := &templateBlock{}
 
 	for {
