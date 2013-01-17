@@ -1,6 +1,8 @@
 
 To do:
 
+    I don't like the way the output expr is passed around and has to be known to the
+        template statements.
     Support if statements.
     When adding import make sure it's not already imported.
     Come up with better error-reporting system.

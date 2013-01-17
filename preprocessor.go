@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/lkesteloot/astutil"
 	"go/ast"
 	"go/token"
 	"io/ioutil"
@@ -75,15 +76,15 @@ func (p *preprocessor) parseFile(outputExpr ast.Expr, filename string) ast.Stmt 
 	return t.Generate(outputExpr)
 }
 
-func (p *preprocessor) processNode(node ast.Node) {
+func (p *preprocessor) ProcessNode(node ast.Node) {
 	// Nothing.
 }
 
-func (p *preprocessor) processIdent(ident **ast.Ident) {
+func (p *preprocessor) ProcessIdent(ident **ast.Ident) {
 	// Nothing.
 }
 
-func (p *preprocessor) processExpr(expr *ast.Expr) {
+func (p *preprocessor) ProcessExpr(expr *ast.Expr) {
 	switch e := (*expr).(type) {
 	case *ast.CallExpr:
 		b, ok := e.Fun.(*ast.BasicLit)
@@ -103,7 +104,7 @@ func (p *preprocessor) processExpr(expr *ast.Expr) {
 	}
 }
 
-func (p *preprocessor) processStmt(stmt *ast.Stmt) {
+func (p *preprocessor) ProcessStmt(stmt *ast.Stmt) {
 	switch e := (*stmt).(type) {
 	case *ast.ExprStmt:
 		outputExpr, filename, ok := p.parseIncludeCall(e)
@@ -113,7 +114,7 @@ func (p *preprocessor) processStmt(stmt *ast.Stmt) {
 	}
 }
 
-func (p *preprocessor) processDecl(decl *ast.Decl) {
+func (p *preprocessor) ProcessDecl(decl *ast.Decl) {
 	// Nothing.
 }
 
@@ -124,7 +125,7 @@ func (p *preprocessor) preprocess(f *ast.File) {
 		ast.Print(fset, f)
 	}
 
-	visitNode(p, f)
+	astutil.VisitNode(p, f)
 	if p.printTree {
 		ast.Print(fset, f)
 	}

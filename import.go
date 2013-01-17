@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/lkesteloot/astutil"
 	"go/ast"
 	"go/token"
 )
@@ -12,15 +13,15 @@ type importChecker struct {
 	found bool
 }
 
-func (ic *importChecker) processNode(node ast.Node) {
+func (ic *importChecker) ProcessNode(node ast.Node) {
 	// Nothing.
 }
 
-func (ic *importChecker) processIdent(ident **ast.Ident) {
+func (ic *importChecker) ProcessIdent(ident **ast.Ident) {
 	// Nothing.
 }
 
-func (ic *importChecker) processExpr(expr *ast.Expr) {
+func (ic *importChecker) ProcessExpr(expr *ast.Expr) {
 	switch e := (*expr).(type) {
 	case *ast.SelectorExpr:
 		i, ok := e.X.(*ast.Ident)
@@ -32,17 +33,17 @@ func (ic *importChecker) processExpr(expr *ast.Expr) {
 	}
 }
 
-func (ic *importChecker) processStmt(stmt *ast.Stmt) {
+func (ic *importChecker) ProcessStmt(stmt *ast.Stmt) {
 	// Nothing.
 }
 
-func (ic *importChecker) processDecl(decl *ast.Decl) {
+func (ic *importChecker) ProcessDecl(decl *ast.Decl) {
 	// Nothing.
 }
 
 func addImport(f *ast.File, pkgName string) {
 	ic := &importChecker{pkgName, false}
-	visitNode(ic, f)
+	astutil.VisitNode(ic, f)
 
 	if ic.found {
 		// XXX See if it's already imported.
