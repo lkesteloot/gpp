@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/lkesteloot/astutil"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -69,8 +70,35 @@ type templateStmt struct {
 	stmt *ast.ExprStmt
 }
 
+type identifierSubstitutor struct {
+	id string
+	expr ast.Expr
+}
+
+func (subst *identifierSubstitutor) ProcessNode(node ast.Node) {}
+func (subst *identifierSubstitutor) ProcessIdent(ident **ast.Ident) {}
+func (subst *identifierSubstitutor) ProcessExpr(expr *ast.Expr) {
+	e, ok := (*expr).(*ast.Ident)
+	if ok && e.Name == subst.id {
+		*expr = subst.expr
+	}
+}
+func (subst *identifierSubstitutor) ProcessStmt(stmt *ast.Stmt) {}
+func (subst *identifierSubstitutor) ProcessDecl(decl *ast.Decl) {}
+
 func (t *templateStmt) Generate(outputExpr ast.Expr) ast.Stmt {
-	return t.stmt
+	// The statement can use the pseudo variable __out__ to mean the output
+	// expression. Substitute it here, duplicating the original first.
+	var stmt ast.Stmt = astutil.DuplicateExprStmt(t.stmt)
+
+	// Do the substitution.
+	subst := identifierSubstitutor{
+		id: "__out__",
+		expr: outputExpr,
+	}
+	astutil.VisitStmt(&subst, &stmt)
+
+	return stmt
 }
 
 // ---------------------------------------------------------------------------
