@@ -1,8 +1,6 @@
 
 To do:
 
-    I don't like the way the output expr is passed around and has to be known to the
-        template statements.
     Support if statements.
     When adding import make sure it's not already imported.
     Come up with better error-reporting system.
@@ -13,8 +11,6 @@ To do:
         Test this and document.
         Won't work for non-HTML, like maybe JavaScript.
     Support raw strings ({{{?)
-    Strip all comments and newlines from file.
-        I think we'd have to blank out all Pos to 0 throughout the tree.
     How to avoid overwriting good go files?
         Special header? We can insert this manually as a comment.
     Maybe don't write .go files if they haven't changed.

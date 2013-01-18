@@ -133,4 +133,7 @@ func (p *preprocessor) preprocess(f *ast.File) {
 	// Make sure these are imported. We may have added a reference to them.
 	addImport(f, "fmt")
 	addImport(f, "html")
+
+	// Remove all blank lines and line breaks.
+	astutil.StripOutPos(f)
 }
