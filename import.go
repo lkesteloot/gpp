@@ -13,14 +13,12 @@ type importChecker struct {
 	found bool
 }
 
+// For astutil.Visitor:
 func (ic *importChecker) ProcessNode(node ast.Node) {
 	// Nothing.
 }
 
-func (ic *importChecker) ProcessIdent(ident **ast.Ident) {
-	// Nothing.
-}
-
+// For astutil.Visitor:
 func (ic *importChecker) ProcessExpr(expr *ast.Expr) {
 	switch e := (*expr).(type) {
 	case *ast.SelectorExpr:
@@ -33,11 +31,8 @@ func (ic *importChecker) ProcessExpr(expr *ast.Expr) {
 	}
 }
 
+// For astutil.Visitor:
 func (ic *importChecker) ProcessStmt(stmt *ast.Stmt) {
-	// Nothing.
-}
-
-func (ic *importChecker) ProcessDecl(decl *ast.Decl) {
 	// Nothing.
 }
 

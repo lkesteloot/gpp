@@ -76,14 +76,12 @@ func (p *preprocessor) parseFile(outputExpr ast.Expr, filename string) ast.Stmt 
 	return t.Generate(outputExpr)
 }
 
+// For astutil.Visitor:
 func (p *preprocessor) ProcessNode(node ast.Node) {
 	// Nothing.
 }
 
-func (p *preprocessor) ProcessIdent(ident **ast.Ident) {
-	// Nothing.
-}
-
+// For astutil.Visitor:
 func (p *preprocessor) ProcessExpr(expr *ast.Expr) {
 	switch e := (*expr).(type) {
 	case *ast.CallExpr:
@@ -104,6 +102,7 @@ func (p *preprocessor) ProcessExpr(expr *ast.Expr) {
 	}
 }
 
+// For astutil.Visitor:
 func (p *preprocessor) ProcessStmt(stmt *ast.Stmt) {
 	switch e := (*stmt).(type) {
 	case *ast.ExprStmt:
@@ -112,10 +111,6 @@ func (p *preprocessor) ProcessStmt(stmt *ast.Stmt) {
 			*stmt = p.parseFile(outputExpr, filename)
 		}
 	}
-}
-
-func (p *preprocessor) ProcessDecl(decl *ast.Decl) {
-	// Nothing.
 }
 
 func (p *preprocessor) preprocess(f *ast.File) {

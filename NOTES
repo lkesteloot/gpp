@@ -2,6 +2,19 @@
 To do:
 
     Support if statements.
+        Make stack of blocks.
+        Detect {# #}
+        Detect "if ".
+            Parse rest of text as expression.
+            Make if node.
+            Add if node with blank block.
+            Push new block on block stack.
+        Detect "end ".
+            Pop block from block stack.
+        Detect "else "?
+    Support for statements.
+        Only support range.
+        Will the go parser parse a range expression?
     When adding import make sure it's not already imported.
     Come up with better error-reporting system.
     Handle backticks in template.
@@ -11,21 +24,22 @@ To do:
         Test this and document.
         Won't work for non-HTML, like maybe JavaScript.
     Support raw strings ({{{?)
-    How to avoid overwriting good go files?
-        Special header? We can insert this manually as a comment.
-    Maybe don't write .go files if they haven't changed.
+    Put special header in output file to avoid overwriting.
+    Don't write .go files if they haven't changed.
 
 Syntax:
 
     {{ name }}           -- Expression must be a string.
     {{ "%d %x"(x, y) }}  -- Formatted to string.
     {% func(f,a,b) %}    -- Sub-template. Just a expression statement probably.
-    {# if expr #}  {# end (anything) #}
-    {# if expr #}  {# else (anything) #}  {# end (anything) #}
+    {# if expr #}  {# end #}
+    {# if expr #}  {# else #}  {# end #}
+    {# for i, e := range ... #}   {# end #}
 
 Options:
 
     If {# #} is on a line by itself, with only whitespace before/after, then strip out
-        all whitespace and eol. Same with {% %}.
+        all whitespace and eol.
     For "for" loop, provide magic way to know if on first iteration or last iteration.
+        Can't do that in general with range expression.
 

@@ -75,8 +75,8 @@ type identifierSubstitutor struct {
 	expr ast.Expr
 }
 
+// For astutil.Visitor:
 func (subst *identifierSubstitutor) ProcessNode(node ast.Node) {}
-func (subst *identifierSubstitutor) ProcessIdent(ident **ast.Ident) {}
 func (subst *identifierSubstitutor) ProcessExpr(expr *ast.Expr) {
 	e, ok := (*expr).(*ast.Ident)
 	if ok && e.Name == subst.id {
@@ -84,7 +84,6 @@ func (subst *identifierSubstitutor) ProcessExpr(expr *ast.Expr) {
 	}
 }
 func (subst *identifierSubstitutor) ProcessStmt(stmt *ast.Stmt) {}
-func (subst *identifierSubstitutor) ProcessDecl(decl *ast.Decl) {}
 
 func (t *templateStmt) Generate(outputExpr ast.Expr) ast.Stmt {
 	// The statement can use the pseudo variable __out__ to mean the output
