@@ -1,17 +1,6 @@
 
 To do:
 
-    Support if statements.
-        Make stack of blocks.
-        Detect {# #}
-        Detect "if ".
-            Parse rest of text as expression.
-            Make if node.
-            Add if node with blank block.
-            Push new block on block stack.
-        Detect "end ".
-            Pop block from block stack.
-        Detect "else "?
     Support for statements.
         Only support range.
         Will the go parser parse a range expression?

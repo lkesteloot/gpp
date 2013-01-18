@@ -10,6 +10,7 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+	"strings"
 )
 
 const (
@@ -24,9 +25,11 @@ const (
 	stateText parserState = iota
 	stateTextOneOpenBrace
 	stateExpression
-	stateExpressionOneCloseBrace
+	stateExpressionCloseBrace
 	stateStatement
 	stateStatementPercent
+	stateDirective
+	stateDirectiveHash
 )
 
 // ---------------------------------------------------------------------------
@@ -100,9 +103,30 @@ func (t *templateStmt) Generate(outputExpr ast.Expr) ast.Stmt {
 	return stmt
 }
 
+type templateIf struct {
+	condition ast.Expr
+	thenNode templateNode
+	elseNode templateNode
+}
+
+func (t *templateIf) Generate(outputExpr ast.Expr) ast.Stmt {
+	thenStmt := t.thenNode.Generate(outputExpr).(*ast.BlockStmt)
+	var elseStmt ast.Stmt
+	if t.elseNode != nil {
+		elseStmt = t.elseNode.Generate(outputExpr)
+	}
+
+	return &ast.IfStmt{
+		Cond: t.condition,
+		Body: thenStmt,
+		Else: elseStmt,
+	}
+}
+
 // ---------------------------------------------------------------------------
 
 func parseTemplate(contentString string) (templateNode, error) {
+	var bStack []*templateBlock
 	b := &templateBlock{}
 
 	content := ([]rune)(contentString)
@@ -133,6 +157,9 @@ func parseTemplate(contentString string) (templateNode, error) {
 			} else if ch == '%' {
 				flushText()
 				state = stateStatement
+			} else if ch == '#' {
+				flushText()
+				state = stateDirective
 			} else {
 				segment = append(segment, '{')
 				segment = append(segment, ch)
@@ -140,11 +167,11 @@ func parseTemplate(contentString string) (templateNode, error) {
 			}
 		case stateExpression:
 			if ch == '}' {
-				state = stateExpressionOneCloseBrace
+				state = stateExpressionCloseBrace
 			} else {
 				segment = append(segment, ch)
 			}
-		case stateExpressionOneCloseBrace:
+		case stateExpressionCloseBrace:
 			if ch == '}' {
 				exprText := string(segment)
 				segment = []rune{}
@@ -192,6 +219,69 @@ func parseTemplate(contentString string) (templateNode, error) {
 				segment = append(segment, ch)
 				state = stateStatement
 			}
+		case stateDirective:
+			if ch == '#' {
+				state = stateDirectiveHash
+			} else {
+				segment = append(segment, ch)
+			}
+		case stateDirectiveHash:
+			if ch == '}' {
+				directive := strings.TrimSpace(string(segment))
+				segment = []rune{}
+
+				// See what the directive is.
+				if strings.HasPrefix(directive, "if ") {
+					exprText := directive[3:]
+					expr, err := parser.ParseExpr(exprText)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Invalid expression: %s\n", exprText)
+						os.Exit(1)
+					}
+					bThen := &templateBlock{}
+					b.list = append(b.list, &templateIf{
+						condition: expr,
+						thenNode: bThen,
+						elseNode: nil,
+					})
+					bStack = append(bStack, b)
+					b = bThen
+				} else if directive == "else" || strings.HasPrefix(directive, "else ") {
+					if len(bStack) == 0 {
+						fmt.Fprintf(os.Stderr, "Else without an if")
+						os.Exit(1)
+					}
+					bLast := bStack[len(bStack)-1]
+					if len(bLast.list) == 0 {
+						fmt.Fprintf(os.Stderr, "Else without an if")
+						os.Exit(1)
+					}
+					tIf, ok := bLast.list[len(bLast.list)-1].(*templateIf)
+					if !ok {
+						fmt.Fprintf(os.Stderr, "Else without an if")
+						os.Exit(1)
+					}
+					bElse := &templateBlock{}
+					tIf.elseNode = bElse
+					b = bElse
+				} else if directive == "end" || strings.HasPrefix(directive, "end ") {
+					if len(bStack) == 0 {
+						fmt.Fprintf(os.Stderr, "Too many ends")
+						os.Exit(1)
+					}
+					b = bStack[len(bStack)-1]
+					bStack = bStack[:len(bStack)-1]
+				} else {
+					fmt.Fprintf(os.Stderr, "Invalid directive: %s\n", directive)
+					os.Exit(1)
+				}
+
+				state = stateText
+			} else {
+				segment = append(segment, '#')
+				segment = append(segment, ch)
+				state = stateDirective
+			}
 		}
 	}
 
@@ -203,6 +293,11 @@ func parseTemplate(contentString string) (templateNode, error) {
 		flushText()
 	default:
 		fmt.Fprintln(os.Stderr, "Unmatched brace")
+		os.Exit(1)
+	}
+
+	if len(bStack) > 0 {
+		fmt.Fprintf(os.Stderr, "Unbalanced directive")
 		os.Exit(1)
 	}
 

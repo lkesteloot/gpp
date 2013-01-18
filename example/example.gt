@@ -15,6 +15,7 @@ func title(f *bufio.Writer, title string) {
 // Dumps the index page of the website.
 func index(f *bufio.Writer) {
 	name := "<b>Lawrence</b>"
+	age := 45
 
 	include(f, "example/index.html")
 }
