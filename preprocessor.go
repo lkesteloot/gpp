@@ -37,7 +37,7 @@ func (p *preprocessor) parseIncludeCall(e *ast.ExprStmt) (outputExpr ast.Expr, f
 		if ok {
 			if i.Name == "include" {
 				if len(c.Args) != 2 {
-					fmt.Fprintf(os.Stderr, "the include() function takes two arguments")
+					fmt.Fprintf(os.Stderr, "the include() function takes two arguments\n")
 					os.Exit(1)
 				}
 
@@ -50,7 +50,7 @@ func (p *preprocessor) parseIncludeCall(e *ast.ExprStmt) (outputExpr ast.Expr, f
 					filename = filename[1:len(filename) - 1]
 					return outputExpr, filename, true
 				} else {
-					fmt.Fprintf(os.Stderr, "the second parameter of include() must be a filename")
+					fmt.Fprintf(os.Stderr, "the second parameter of include() must be a filename\n")
 					os.Exit(1)
 				}
 			}
