@@ -123,6 +123,34 @@ func (t *templateIf) Generate(outputExpr ast.Expr) ast.Stmt {
 	}
 }
 
+type templateFor struct {
+	key, value string
+	rangeExpr ast.Expr
+	body templateNode
+}
+
+func (t *templateFor) Generate(outputExpr ast.Expr) ast.Stmt {
+	bodyStmt := t.body.Generate(outputExpr).(*ast.BlockStmt)
+
+	r := &ast.RangeStmt{
+		Key: &ast.Ident{
+			Name: t.key,
+		},
+		Tok: token.DEFINE,
+		X: t.rangeExpr,
+		Body: bodyStmt,
+	}
+
+	// Value variable is optional.
+	if t.value != "" {
+		r.Value = &ast.Ident{
+			Name: t.value,
+		}
+	}
+
+	return r
+}
+
 // ---------------------------------------------------------------------------
 
 func parseTemplate(contentString string) (templateNode, error) {
@@ -246,6 +274,44 @@ func parseTemplate(contentString string) (templateNode, error) {
 					})
 					bStack = append(bStack, b)
 					b = bThen
+				} else if strings.HasPrefix(directive, "for ") {
+					stmtText := directive[4:]
+					// Split at :=
+					stmtFields := strings.SplitN(stmtText, ":=", 2)
+					if len(stmtFields) != 2 {
+						fmt.Fprintf(os.Stderr, "For loop must have assignment: %s\n", stmtText)
+						os.Exit(1)
+					}
+					// Split LHS at comma.
+					varFields := strings.Split(stmtFields[0], ",")
+					if len(varFields) > 2 {
+						fmt.Fprintf(os.Stderr,
+							"LHS of for loop must have at most two variables: %s\n", stmtText)
+						os.Exit(1)
+					} else if len(varFields) == 1 {
+						varFields = append(varFields, "")
+					}
+					// Get rid of "range" prefix.
+					rhs := strings.TrimSpace(stmtFields[1])
+					if !strings.HasPrefix(rhs, "range ") {
+						fmt.Fprintf(os.Stderr, "For loop must be range: %s\n", rhs)
+						os.Exit(1)
+					}
+					rhs = rhs[6:]
+					rangeExpr, err := parser.ParseExpr(rhs)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Invalid expression: %s (%s)\n", rhs, err)
+						os.Exit(1)
+					}
+					bForBody := &templateBlock{}
+					b.list = append(b.list, &templateFor{
+						key: varFields[0],
+						value: varFields[1],
+						rangeExpr: rangeExpr,
+						body: bForBody,
+					})
+					bStack = append(bStack, b)
+					b = bForBody
 				} else if directive == "else" || strings.HasPrefix(directive, "else ") {
 					if len(bStack) == 0 {
 						fmt.Fprintf(os.Stderr, "Else without an if")
@@ -265,6 +331,7 @@ func parseTemplate(contentString string) (templateNode, error) {
 					tIf.elseNode = bElse
 					b = bElse
 				} else if directive == "end" || strings.HasPrefix(directive, "end ") {
+					// End of "if" or "for".
 					if len(bStack) == 0 {
 						fmt.Fprintf(os.Stderr, "Too many ends")
 						os.Exit(1)

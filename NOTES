@@ -1,9 +1,6 @@
 
 To do:
 
-    Support for statements.
-        Only support range.
-        Will the go parser parse a range expression?
     When adding import make sure it's not already imported.
     Come up with better error-reporting system.
     Handle backticks in template.
