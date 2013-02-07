@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+var staticPath = flag.String("static", "", "local path to static directory")
+
 func main() {
 	// Get input file.
 	flag.Parse()

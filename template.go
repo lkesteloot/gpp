@@ -3,12 +3,14 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"github.com/lkesteloot/astutil"
 	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io"
 	"os"
 	"strings"
 )
@@ -30,6 +32,8 @@ const (
 	stateStatementPercent
 	stateDirective
 	stateDirectiveHash
+	stateStatic
+	stateStaticDollar
 )
 
 // ---------------------------------------------------------------------------
@@ -188,6 +192,9 @@ func parseTemplate(contentString string) (templateNode, error) {
 			} else if ch == '#' {
 				flushText()
 				state = stateDirective
+			} else if ch == '$' {
+				flushText()
+				state = stateStatic
 			} else {
 				segment = append(segment, '{')
 				segment = append(segment, ch)
@@ -349,6 +356,50 @@ func parseTemplate(contentString string) (templateNode, error) {
 				segment = append(segment, ch)
 				state = stateDirective
 			}
+		case stateStatic:
+			if ch == '$' {
+				state = stateStaticDollar
+			} else {
+				segment = append(segment, ch)
+			}
+		case stateStaticDollar:
+			if ch == '}' {
+				static := strings.TrimSpace(string(segment))
+
+				if *staticPath != "" {
+					// Get file contents.
+					localFilename := *staticPath + "/" + static
+					file, err := os.Open(localFilename)
+
+					if err == nil {
+						defer file.Close()
+
+						// Compute hash.
+						h := sha1.New()
+						io.Copy(h, file)
+
+						// Convert to string.
+						hashString := fmt.Sprintf("%x", h.Sum(nil))
+
+						// Clip, no sense in keeping it all.
+						hashString = hashString[:10]
+
+						// Add to static.
+						static += "?" + hashString
+					} else {
+						fmt.Fprintf(os.Stderr, "File \"%s\" not found", localFilename)
+
+					}
+				}
+
+				segment = ([]rune)(static)
+				flushText();
+				state = stateText
+			} else {
+				segment = append(segment, '$')
+				segment = append(segment, ch)
+				state = stateStatic
+			}
 		}
 	}
 
@@ -359,7 +410,7 @@ func parseTemplate(contentString string) (templateNode, error) {
 		segment = append(segment, '{')
 		flushText()
 	default:
-		fmt.Fprintln(os.Stderr, "Unmatched brace")
+		fmt.Fprintf(os.Stderr, "Unmatched brace (%d)\n", state)
 		os.Exit(1)
 	}
 
