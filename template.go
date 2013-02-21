@@ -24,14 +24,25 @@ const (
 type parserState int
 
 const (
+	// Plain text, outside directives.
 	stateText parserState = iota
 	stateTextOneOpenBrace
+
+	// Expression, evaluated and inserted, HTML-escaped. Put a / right after
+	// the {{ to not HTML-escape.
 	stateExpression
 	stateExpressionCloseBrace
+
+	// Ifs and fors.
 	stateStatement
 	stateStatementPercent
+
+	// Statement, usually a function call.
 	stateDirective
 	stateDirectiveHash
+
+	// Reference to a static file. Adds the hash of the file as a query parameter
+	// to bust the cache.
 	stateStatic
 	stateStaticDollar
 )
@@ -67,10 +78,16 @@ func (t *templateBlock) Generate(outputExpr ast.Expr) ast.Stmt {
 
 type templateExpr struct {
 	expr ast.Expr
+	raw bool
 }
 
 func (t *templateExpr) Generate(outputExpr ast.Expr) ast.Stmt {
-	return makeWriteStmt(outputExpr, makeEscapeExpr(t.expr))
+	expr := t.expr
+	if !t.raw {
+		expr = makeEscapeExpr(expr)
+	}
+
+	return makeWriteStmt(outputExpr, expr)
 }
 
 type templateStmt struct {
@@ -209,6 +226,11 @@ func parseTemplate(contentString string) (templateNode, error) {
 		case stateExpressionCloseBrace:
 			if ch == '}' {
 				exprText := string(segment)
+				var raw = false
+				if len(exprText) > 0 && exprText[0] == '/' {
+					raw = true
+					exprText = exprText[1:]
+				}
 				segment = []rune{}
 				expr, err := parser.ParseExpr(exprText)
 				if err != nil {
@@ -220,7 +242,7 @@ func parseTemplate(contentString string) (templateNode, error) {
 					printer.Fprint(os.Stderr, fset, expr)
 					fmt.Fprintln(os.Stderr)
 				}
-				b.list = append(b.list, &templateExpr{expr})
+				b.list = append(b.list, &templateExpr{expr, raw})
 				state = stateText
 			} else {
 				segment = append(segment, '}')
