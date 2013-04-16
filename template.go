@@ -33,7 +33,7 @@ const (
 	stateExpression
 	stateExpressionCloseBrace
 
-	// Ifs and fors.
+	// "if", "for", or "with".
 	stateStatement
 	stateStatementPercent
 
@@ -170,6 +170,33 @@ func (t *templateFor) Generate(outputExpr ast.Expr) ast.Stmt {
 	}
 
 	return r
+}
+
+type templateWith struct {
+	variable string
+	expression ast.Expr
+	body templateNode
+}
+
+func (t *templateWith) Generate(outputExpr ast.Expr) ast.Stmt {
+	bodyStmt := t.body.Generate(outputExpr).(*ast.BlockStmt)
+
+	return &ast.BlockStmt{
+		List: []ast.Stmt{
+			&ast.AssignStmt{
+				Lhs: []ast.Expr{
+					&ast.Ident{
+						Name: t.variable,
+					},
+				},
+				Tok: token.DEFINE,
+				Rhs: []ast.Expr{
+					t.expression,
+				},
+			},
+			bodyStmt,
+		},
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -359,8 +386,32 @@ func parseTemplate(contentString string) (templateNode, error) {
 					bElse := &templateBlock{}
 					tIf.elseNode = bElse
 					b = bElse
+				} else if strings.HasPrefix(directive, "with ") {
+					stmtText := directive[5:]
+					// Split at :=
+					stmtFields := strings.SplitN(stmtText, ":=", 2)
+					if len(stmtFields) != 2 {
+						fmt.Fprintf(os.Stderr, "With must have assignment: %s\n", stmtText)
+						os.Exit(1)
+					}
+					// LHS is variable.
+					variable := strings.TrimSpace(stmtFields[0])
+					// RHS is expression.
+					expression, err := parser.ParseExpr(stmtFields[1])
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Invalid expression: %s (%s)\n", stmtFields[1], err)
+						os.Exit(1)
+					}
+					bWithBody := &templateBlock{}
+					b.list = append(b.list, &templateWith{
+						variable: variable,
+						expression: expression,
+						body: bWithBody,
+					})
+					bStack = append(bStack, b)
+					b = bWithBody
 				} else if directive == "end" || strings.HasPrefix(directive, "end ") {
-					// End of "if" or "for".
+					// End of "if", "for", or "with".
 					if len(bStack) == 0 {
 						fmt.Fprintf(os.Stderr, "Too many ends")
 						os.Exit(1)
