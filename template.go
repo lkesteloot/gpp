@@ -33,11 +33,11 @@ const (
 	stateExpression
 	stateExpressionCloseBrace
 
-	// "if", "for", or "with".
+	// Statement, usually a function call.
 	stateStatement
 	stateStatementPercent
 
-	// Statement, usually a function call.
+	// "if", "for", or "with".
 	stateDirective
 	stateDirectiveHash
 
