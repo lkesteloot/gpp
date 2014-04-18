@@ -5,7 +5,6 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
-	"github.com/lkesteloot/astutil"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -13,6 +12,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/lkesteloot/astutil"
 )
 
 const (
@@ -78,7 +79,7 @@ func (t *templateBlock) Generate(outputExpr ast.Expr) ast.Stmt {
 
 type templateExpr struct {
 	expr ast.Expr
-	raw bool
+	raw  bool
 }
 
 func (t *templateExpr) Generate(outputExpr ast.Expr) ast.Stmt {
@@ -95,7 +96,7 @@ type templateStmt struct {
 }
 
 type identifierSubstitutor struct {
-	id string
+	id   string
 	expr ast.Expr
 }
 
@@ -116,7 +117,7 @@ func (t *templateStmt) Generate(outputExpr ast.Expr) ast.Stmt {
 
 	// Do the substitution.
 	subst := identifierSubstitutor{
-		id: "__out__",
+		id:   "__out__",
 		expr: outputExpr,
 	}
 	astutil.VisitStmt(&subst, &stmt)
@@ -126,8 +127,8 @@ func (t *templateStmt) Generate(outputExpr ast.Expr) ast.Stmt {
 
 type templateIf struct {
 	condition ast.Expr
-	thenNode templateNode
-	elseNode templateNode
+	thenNode  templateNode
+	elseNode  templateNode
 }
 
 func (t *templateIf) Generate(outputExpr ast.Expr) ast.Stmt {
@@ -146,8 +147,8 @@ func (t *templateIf) Generate(outputExpr ast.Expr) ast.Stmt {
 
 type templateFor struct {
 	key, value string
-	rangeExpr ast.Expr
-	body templateNode
+	rangeExpr  ast.Expr
+	body       templateNode
 }
 
 func (t *templateFor) Generate(outputExpr ast.Expr) ast.Stmt {
@@ -157,8 +158,8 @@ func (t *templateFor) Generate(outputExpr ast.Expr) ast.Stmt {
 		Key: &ast.Ident{
 			Name: t.key,
 		},
-		Tok: token.DEFINE,
-		X: t.rangeExpr,
+		Tok:  token.DEFINE,
+		X:    t.rangeExpr,
 		Body: bodyStmt,
 	}
 
@@ -173,9 +174,9 @@ func (t *templateFor) Generate(outputExpr ast.Expr) ast.Stmt {
 }
 
 type templateWith struct {
-	variable string
+	variable   string
 	expression ast.Expr
-	body templateNode
+	body       templateNode
 }
 
 func (t *templateWith) Generate(outputExpr ast.Expr) ast.Stmt {
@@ -296,7 +297,7 @@ func parseTemplate(contentString string) (templateNode, error) {
 					printer.Fprint(os.Stderr, fset, stmt)
 					fmt.Fprintln(os.Stderr)
 				}
-				b.list = append(b.list, &templateStmt{&ast.ExprStmt{X:stmt}})
+				b.list = append(b.list, &templateStmt{&ast.ExprStmt{X: stmt}})
 				state = stateText
 			} else {
 				segment = append(segment, '%')
@@ -325,8 +326,8 @@ func parseTemplate(contentString string) (templateNode, error) {
 					bThen := &templateBlock{}
 					b.list = append(b.list, &templateIf{
 						condition: expr,
-						thenNode: bThen,
-						elseNode: nil,
+						thenNode:  bThen,
+						elseNode:  nil,
 					})
 					bStack = append(bStack, b)
 					b = bThen
@@ -361,26 +362,26 @@ func parseTemplate(contentString string) (templateNode, error) {
 					}
 					bForBody := &templateBlock{}
 					b.list = append(b.list, &templateFor{
-						key: varFields[0],
-						value: varFields[1],
+						key:       varFields[0],
+						value:     varFields[1],
 						rangeExpr: rangeExpr,
-						body: bForBody,
+						body:      bForBody,
 					})
 					bStack = append(bStack, b)
 					b = bForBody
 				} else if directive == "else" || strings.HasPrefix(directive, "else ") {
 					if len(bStack) == 0 {
-						fmt.Fprintf(os.Stderr, "Else without an if")
+						fmt.Fprintf(os.Stderr, "Else without an if\n")
 						os.Exit(1)
 					}
 					bLast := bStack[len(bStack)-1]
 					if len(bLast.list) == 0 {
-						fmt.Fprintf(os.Stderr, "Else without an if")
+						fmt.Fprintf(os.Stderr, "Else without an if\n")
 						os.Exit(1)
 					}
 					tIf, ok := bLast.list[len(bLast.list)-1].(*templateIf)
 					if !ok {
-						fmt.Fprintf(os.Stderr, "Else without an if")
+						fmt.Fprintf(os.Stderr, "Else without an if\n")
 						os.Exit(1)
 					}
 					bElse := &templateBlock{}
@@ -404,16 +405,16 @@ func parseTemplate(contentString string) (templateNode, error) {
 					}
 					bWithBody := &templateBlock{}
 					b.list = append(b.list, &templateWith{
-						variable: variable,
+						variable:   variable,
 						expression: expression,
-						body: bWithBody,
+						body:       bWithBody,
 					})
 					bStack = append(bStack, b)
 					b = bWithBody
 				} else if directive == "end" || strings.HasPrefix(directive, "end ") {
 					// End of "if", "for", or "with".
 					if len(bStack) == 0 {
-						fmt.Fprintf(os.Stderr, "Too many ends")
+						fmt.Fprintf(os.Stderr, "Too many ends\n")
 						os.Exit(1)
 					}
 					b = bStack[len(bStack)-1]
@@ -460,13 +461,12 @@ func parseTemplate(contentString string) (templateNode, error) {
 						// Add to static.
 						static += "?" + hashString
 					} else {
-						fmt.Fprintf(os.Stderr, "File \"%s\" not found", localFilename)
-
+						fmt.Fprintf(os.Stderr, "File \"%s\" not found\n", localFilename)
 					}
 				}
 
 				segment = ([]rune)(static)
-				flushText();
+				flushText()
 				state = stateText
 			} else {
 				segment = append(segment, '$')
@@ -488,7 +488,7 @@ func parseTemplate(contentString string) (templateNode, error) {
 	}
 
 	if len(bStack) > 0 {
-		fmt.Fprintf(os.Stderr, "Unbalanced directive")
+		fmt.Fprintf(os.Stderr, "Unbalanced directive\n")
 		os.Exit(1)
 	}
 
@@ -501,7 +501,7 @@ func makeEscapeExpr(expr ast.Expr) ast.Expr {
 			X: &ast.Ident{
 				Name: "html",
 			},
-			Sel: &ast.Ident {
+			Sel: &ast.Ident{
 				Name: "EscapeString",
 			},
 		},
@@ -516,7 +516,7 @@ func makeWriteStmt(outputExpr ast.Expr, expr ast.Expr) ast.Stmt {
 		X: &ast.CallExpr{
 			Fun: &ast.SelectorExpr{
 				X: outputExpr,
-				Sel: &ast.Ident {
+				Sel: &ast.Ident{
 					Name: "WriteString",
 				},
 			},
