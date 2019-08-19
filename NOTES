@@ -1,6 +1,8 @@
 
 To do:
 
+    Add support for line directives:
+        //line index.gt:9
     When adding import make sure it's not already imported.
     Come up with better error-reporting system.
     Handle backticks in template.
